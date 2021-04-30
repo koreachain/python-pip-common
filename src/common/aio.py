@@ -7,7 +7,7 @@ import signal
 import sys
 import time
 import traceback
-from asyncio.exceptions import CancelledError
+from asyncio import CancelledError
 from asyncio.tasks import Task
 from contextlib import suppress
 from typing import Awaitable
@@ -74,7 +74,7 @@ def init(coro: Awaitable, debug: bool = False) -> None:
 
 
 def wrap(coro):
-    """Handle exceptions from child coroutines."""
+    """Handle exceptions from background tasks."""
 
     @functools.wraps(coro)
     async def run_func(*args, **kwargs):
