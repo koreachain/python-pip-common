@@ -74,7 +74,7 @@ def init(coro: Awaitable, debug: bool = False) -> None:
 
 
 def wrap(coro):
-    """Handle exceptions from child coroutines."""
+    """Handle exceptions from background tasks."""
 
     @functools.wraps(coro)
     async def run_func(*args, **kwargs):
