@@ -1,0 +1,21 @@
+// https://code.visualstudio.com/docs/getstarted/settings
+{
+  "files.watcherExclude": {
+    "**/.direnv/**": true,
+    "**/__pycache__/**": true,
+  },
+  "python.terminal.activateEnvironment": false,
+  "python.languageServer": "Pylance",
+  "python.analysis.typeCheckingMode": "basic",
+  "python.formatting.provider": "black",
+  "python.formatting.blackArgs": [
+    "--fast",
+    "--line-length=88",
+  ],
+  "[python]": {
+    "editor.formatOnSave": true,
+    "editor.rulers": [
+      88,
+    ],
+  },
+}

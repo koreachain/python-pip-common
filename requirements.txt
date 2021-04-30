@@ -1,0 +1,6 @@
+black
+ipykernel
+
+aiodebug>=1.1.2
+pudb>=2020.1
+uvloop>=0.15.2
