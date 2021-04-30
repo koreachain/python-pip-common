@@ -7,7 +7,7 @@ import signal
 import sys
 import time
 import traceback
-from asyncio.exceptions import CancelledError
+from asyncio import CancelledError
 from asyncio.tasks import Task
 from contextlib import suppress
 from typing import Awaitable
