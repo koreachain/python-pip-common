@@ -4,7 +4,7 @@ from typing import Any
 
 
 def run(argv: Any[str, list], *args, **kwargs) -> CompletedProcess[str]:
-    return subprocess.run(
+    result = subprocess.run(
         argv,
         *args,
         capture_output=True,
@@ -13,3 +13,7 @@ def run(argv: Any[str, list], *args, **kwargs) -> CompletedProcess[str]:
         text=True,
         **kwargs
     )
+    result.stdout = result.stdout.strip()
+    result.stderr = result.stderr.strip()
+
+    return result
