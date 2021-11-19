@@ -13,7 +13,7 @@ def run(argv: Any[str, list], *args, **kwargs) -> CompletedProcess[str]:
         text=True,
         **kwargs
     )
-    result.stdout = result.stdout.strip()
-    result.stderr = result.stderr.strip()
+    result.stdout = result.stdout.rstrip("\n")
+    result.stderr = result.stderr.rstrip("\n")
 
     return result
