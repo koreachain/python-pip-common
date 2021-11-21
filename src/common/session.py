@@ -1,25 +1,28 @@
 #!/usr/bin/env python3
 
 import requests
+import warnings
 from retrying import retry
-from requests.packages.urllib3 import disable_warnings
-from urllib3.exceptions import InsecureRequestWarning
 
 
 class RetryError(Exception):
-    pass
+    """An HTTP error that can be safely retried."""
 
 
 class Session(requests.Session):
+    """Set better defaults for requests.Session()."""
+
     def __init__(self, *args, secure=True, **kwargs):
         super().__init__(*args, **kwargs)
         self.headers.update({"User-Agent": "Mozilla/5.0 Gecko/20100101"})
 
         if not secure:
             self.verify = False
-            disable_warnings(category=InsecureRequestWarning)
+            warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 
-    def _retry_exceptions(exception):
+    @staticmethod
+    def _retry_exceptions(exception: Exception) -> bool:
+        """List exceptions that should be retried."""
         return isinstance(
             exception,
             (
@@ -31,6 +34,7 @@ class Session(requests.Session):
 
     @retry(retry_on_exception=_retry_exceptions, stop_max_attempt_number=3)
     def request(self, method, url, *args, timeout=30, **kwargs):
+        """Set timeout and retries for all HTTP methods."""
         reply = super().request(method, url, *args, timeout=timeout, **kwargs)
 
         try:
