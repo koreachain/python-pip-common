@@ -21,7 +21,7 @@ class Session(requests.Session):
             warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 
     @staticmethod
-    def _retry_exceptions(exception: Exception) -> bool:
+    def _retry_exc(exception: Exception) -> bool:
         """List exceptions that should be retried."""
         return isinstance(
             exception,
@@ -32,7 +32,7 @@ class Session(requests.Session):
             ),
         )
 
-    @retry(retry_on_exception=_retry_exceptions, stop_max_attempt_number=3)
+    @retry(retry_on_exception=_retry_exc.__func__, stop_max_attempt_number=3)
     def request(self, method, url, *args, timeout=30, **kwargs):
         """Set timeout and retries for all HTTP methods."""
         reply = super().request(method, url, *args, timeout=timeout, **kwargs)
