@@ -1,8 +1,18 @@
+#!/usr/bin/env python3
+
 import subprocess
+import sys
 from subprocess import CompletedProcess
+from typing import List, Union
 
 
-def run(argv: str | list[str], *args, **kwargs) -> CompletedProcess[str]:
+if sys.version_info >= (3, 9, 0):
+    Args = str | list[str]
+else:
+    Args = Union[str, List[str]]
+
+
+def run(argv: Args, *args, **kwargs) -> CompletedProcess[str]:
     """Run command and capture stdout and stderr."""
     result = subprocess.run(
         argv,
@@ -19,7 +29,7 @@ def run(argv: str | list[str], *args, **kwargs) -> CompletedProcess[str]:
     return result
 
 
-def tty(argv: str | list[str], *args, **kwargs) -> CompletedProcess[str]:
+def tty(argv: Args, *args, **kwargs) -> CompletedProcess[str]:
     """Run command and output to stdout and stderr."""
     result = subprocess.run(
         argv,
