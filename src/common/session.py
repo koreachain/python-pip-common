@@ -1,20 +1,25 @@
 #!/usr/bin/env python3
 
-import requests
 import warnings
+
+import requests
+from requests.exceptions import ConnectionError, HTTPError, Timeout
 from retrying import retry
+
+HTTPErrors = int | tuple[int, ...]
 
 
 class RetryError(Exception):
-    """An HTTP error that can be safely retried."""
+    """HTTP errors that can be safely retried."""
 
 
 class Session(requests.Session):
     """Set better defaults for requests.Session()."""
 
-    def __init__(self, *args, secure=True, **kwargs):
+    def __init__(self, *args, insist: HTTPErrors = (), secure: bool = True, **kwargs):
         super().__init__(*args, **kwargs)
         self.headers.update({"User-Agent": "Mozilla/5.0 Gecko/20100101"})
+        self.include = (insist,) if isinstance(insist, int) else insist
 
         if not secure:
             self.verify = False
@@ -23,14 +28,7 @@ class Session(requests.Session):
     @staticmethod
     def _retry_exc(exception: Exception) -> bool:
         """List exceptions that should be retried."""
-        return isinstance(
-            exception,
-            (
-                requests.exceptions.ConnectionError,
-                requests.exceptions.Timeout,
-                RetryError,
-            ),
-        )
+        return isinstance(exception, (ConnectionError, Timeout, RetryError))
 
     @retry(retry_on_exception=_retry_exc.__func__, stop_max_attempt_number=3)
     def request(self, method, url, *args, timeout=30, **kwargs):
@@ -39,8 +37,8 @@ class Session(requests.Session):
 
         try:
             reply.raise_for_status()
-        except requests.exceptions.HTTPError as e:
-            if reply.status_code in (408, 502, 503, 504):
+        except HTTPError as e:
+            if reply.status_code in (408, 502, 503, 504) + self.include:
                 raise RetryError(e)
             else:
                 raise
