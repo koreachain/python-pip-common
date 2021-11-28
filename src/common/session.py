@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 
+import sys
 import warnings
+from typing import Tuple, Union
 
 import requests
 from requests.exceptions import ConnectionError, HTTPError, Timeout
 from retrying import retry
 
-HTTPErrors = int | tuple[int, ...]
+
+if sys.version_info >= (3, 9, 0):
+    HTTPErrors = int | tuple[int, ...]
+else:
+    HTTPErrors = Union[int, Tuple[()], Tuple[int]]
 
 
 class RetryError(Exception):
