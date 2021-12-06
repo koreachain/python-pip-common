@@ -54,8 +54,9 @@ class Crypto(Fernet):
 if __name__ == "__main__":
 
     def mlinput() -> str:
-        msg = [input("Token: ")]
-        for line in iter(lambda: input("  ...: "), ""):
+        print("Token (empty line to confirm):")
+        msg = []
+        for line in iter(input, ""):
             msg.append(line.strip())
         return "".join(msg)
 
