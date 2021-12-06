@@ -64,9 +64,8 @@ if __name__ == "__main__":
         sys.exit(0)
 
     if sys.argv[1] == "new-salt":
-        rand = os.urandom(16)
-        salt = base64.urlsafe_b64encode(rand).decode()
-        print(salt)
+        salt = os.urandom(16)
+        print(yaml.dump(salt))
         sys.exit(0)
 
     if sys.argv[1] == "-s":
