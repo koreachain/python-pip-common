@@ -70,7 +70,7 @@ if __name__ == "__main__":
         sys.exit(0)
 
     if sys.argv[1] == "-s":
-        salt = sys.argv[2].encode()
+        salt = base64.urlsafe_b64decode(sys.argv[2])
     elif sys.argv[1] == "-c":
         with open(sys.argv[2]) as fd:
             data = yaml.safe_load(fd)
