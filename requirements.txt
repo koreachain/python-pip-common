@@ -7,5 +7,5 @@ pudb>=2020.1
 pwinput>=1.0.2
 PyYAML>=6.0
 requests>=2.26.0
-retrying>=1.3.3
+tenacity>=8.0.1
 uvloop>=0.15.2

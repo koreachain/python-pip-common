@@ -1,21 +1,28 @@
 #!/usr/bin/env python3
 
+import logging
 import sys
 import warnings
 from typing import Tuple, Union
 
 import requests
-from requests.exceptions import ConnectionError, HTTPError, Timeout
-from retrying import retry
-
+from requests.exceptions import ConnectionError as NetworkError  # overwrites builtin
+from requests.exceptions import HTTPError, Timeout
+from tenacity import RetryCallState, retry
+from tenacity.retry import retry_if_exception_type as retry_exc
+from tenacity.stop import stop_after_attempt as attempts
+from tenacity.stop import stop_after_delay as total_sec
+from tenacity.wait import wait_exponential as exponential
 
 if sys.version_info >= (3, 9, 0):
     HTTPErrors = int | tuple[int, ...]
 else:
     HTTPErrors = Union[int, Tuple[()], Tuple[int]]
 
+log = logging.getLogger(__name__)
 
-class RetryError(Exception):
+
+class RetryableHTTPError(Exception):
     """HTTP errors that can be safely retried."""
 
 
@@ -32,11 +39,24 @@ class Session(requests.Session):
             warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 
     @staticmethod
-    def _retry_exc(exception: Exception) -> bool:
-        """List exceptions that should be retried."""
-        return isinstance(exception, (ConnectionError, Timeout, RetryError))
+    def _log_retries(state: RetryCallState):
+        """Log all retries with warning level."""
+        attempt = state.attempt_number
+        seconds = int(state.idle_for)
+        e = state.outcome._exception  # type: ignore
+        log.warning(f"Retry #{attempt} in {seconds}s: {type(e).__name__}: {e}")
 
-    @retry(retry_on_exception=_retry_exc.__func__, stop_max_attempt_number=3)
+    @retry(
+        retry=retry_exc((NetworkError, RetryableHTTPError)),
+        wait=exponential(multiplier=3, max=45),
+        stop=attempts(1 + 5) | total_sec(120),
+        before_sleep=_log_retries.__func__,
+    )
+    @retry(
+        retry=retry_exc(Timeout),
+        stop=attempts(3),
+        before_sleep=_log_retries.__func__,
+    )
     def request(self, method, url, *args, timeout=30, **kwargs):
         """Set timeout and retries for all HTTP methods."""
         reply = super().request(method, url, *args, timeout=timeout, **kwargs)
@@ -45,7 +65,7 @@ class Session(requests.Session):
             reply.raise_for_status()
         except HTTPError as e:
             if reply.status_code in (408, 502, 503, 504) + self.include:
-                raise RetryError(e)
+                raise RetryableHTTPError(e)
             else:
                 raise
 
