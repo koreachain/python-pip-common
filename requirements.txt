@@ -1,3 +1,5 @@
+# reflects setup.cfg
+
 black
 ipykernel
 
