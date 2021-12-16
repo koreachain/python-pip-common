@@ -12,8 +12,14 @@
     "--fast",
     "--line-length=88",
   ],
+  "python.sortImports.args": [
+    "--profile=black",
+  ],
   "[python]": {
     "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": true
+    },
     "editor.rulers": [
       88,
     ],
