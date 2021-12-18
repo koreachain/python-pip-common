@@ -42,7 +42,8 @@ class Session(requests.Session):
     def _log_retries(state: RetryCallState):
         """Log all retries with warning level."""
         attempt = state.attempt_number
-        seconds = int(state.idle_for)
+        assert state.next_action is not None
+        seconds = int(state.next_action.sleep)
         e = state.outcome._exception  # type: ignore
         log.warning(f"Retry #{attempt} in {seconds}s: {type(e).__name__}: {e}")
 
