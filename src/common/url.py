@@ -45,7 +45,7 @@ class Session(requests.Session):
         assert state.next_action is not None
         seconds = int(state.next_action.sleep)
         e = state.outcome._exception  # type: ignore
-        log.warning(f"Retry #{attempt} in {seconds}s: {type(e).__name__}: {e}")
+        log.debug(f"Retry #{attempt} in {seconds}s: {type(e).__name__}: {e}")
 
     @retry(
         retry=retry_exc((NetworkError, RetryableHTTPError)),
