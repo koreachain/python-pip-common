@@ -14,7 +14,7 @@ from tenacity.stop import stop_after_attempt as attempts
 from tenacity.stop import stop_after_delay as total_sec
 from tenacity.wait import wait_exponential as exponential
 
-if sys.version_info >= (3, 9, 0):
+if sys.version_info >= (3, 10, 0):
     HTTPErrors = int | tuple[int, ...]
 else:
     HTTPErrors = Union[int, Tuple[()], Tuple[int]]
