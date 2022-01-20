@@ -64,4 +64,4 @@ def parse(doc: str | None) -> SimpleNamespace:
                 value = vars(builtins)[tags[name]](value)
         args[name] = value
 
-    return ns(args)
+    return ns({k.replace("-", "_"): v for k, v in args.items()})
