@@ -21,7 +21,7 @@ class Secret:
     def __repr__(self) -> str:
         return 'Secret(msg="***")'
 
-    def reveal(self) -> str:
+    def reveal(self) -> str | bytes:
         """Return message whenever requested."""
         return self.msg
 
