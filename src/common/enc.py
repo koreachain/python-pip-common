@@ -15,8 +15,8 @@ from pwinput import pwinput
 class Secret:
     """Hide repr() for secrets in debug logs."""
 
-    def __init__(self, string: str) -> None:
-        self.msg: str = string
+    def __init__(self, msg: str | bytes) -> None:
+        self.msg: str | bytes = msg
 
     def __repr__(self) -> str:
         return 'Secret(msg="***")'
