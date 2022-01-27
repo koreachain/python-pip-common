@@ -40,7 +40,7 @@ class Session(requests.Session):
 
     @staticmethod
     def _log_retries(state: RetryCallState):
-        """Log all retries with warning level."""
+        """Log all retries with debug level."""
         attempt = state.attempt_number
         assert state.next_action is not None
         seconds = int(state.next_action.sleep)
