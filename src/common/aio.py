@@ -5,6 +5,7 @@ import functools
 import logging
 import signal
 import sys
+import threading
 import time
 import traceback
 from asyncio import CancelledError
@@ -52,8 +53,10 @@ class HandleSIGUSR2:
                 await asyncio.sleep(1)
 
 
-# signals can only be setup from the main thread, do on import
-HandleSIGUSR2()
+if threading.current_thread() is threading.main_thread():
+    HandleSIGUSR2()
+else:
+    log.warning("Import aio from the main thread: writing stacks on SIGUSR2 disabled")
 
 
 def init(coro: Awaitable, debug: bool = False) -> None:
