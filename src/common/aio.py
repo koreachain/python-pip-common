@@ -21,16 +21,16 @@ from common import dbg
 log = logging.getLogger(__name__)
 
 
-class HandleSIGUSR1:
+class HandleSIGUSR2:
     """Write to a file the stack for all async tasks."""
 
     def __init__(self) -> None:
         self.trace: str = f"{time.strftime('%F-%R', time.localtime())}.trace"
         self.monitor: Task
-        signal.signal(signal.SIGUSR1, self.handle_sigusr1)
+        signal.signal(signal.SIGUSR2, self.handle_sigusr2)
 
-    def handle_sigusr1(self, signum, frame):
-        """Start or stop writing stacks on SIGUSR1."""
+    def handle_sigusr2(self, signum, frame):
+        """Start or stop writing stacks on SIGUSR2."""
         try:
             self.monitor
         except AttributeError:
@@ -61,7 +61,7 @@ def init(coro: Awaitable, debug: bool = False) -> None:
     else:
         log_slow_callbacks.enable(0.1)
 
-    HandleSIGUSR1()
+    HandleSIGUSR2()
 
     try:
         loop.run_until_complete(coro)
