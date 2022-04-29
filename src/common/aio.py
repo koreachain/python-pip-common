@@ -52,6 +52,10 @@ class HandleSIGUSR2:
                 await asyncio.sleep(1)
 
 
+# signals can only be setup from the main thread, do on import
+HandleSIGUSR2()
+
+
 def init(coro: Awaitable, debug: bool = False) -> None:
     """Wrap call to asyncio.run(), use uvloop."""
     loop = uvloop.new_event_loop()
@@ -60,8 +64,6 @@ def init(coro: Awaitable, debug: bool = False) -> None:
         loop.set_debug(enabled=debug)
     else:
         log_slow_callbacks.enable(0.1)
-
-    HandleSIGUSR2()
 
     try:
         loop.run_until_complete(coro)
