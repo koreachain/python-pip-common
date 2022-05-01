@@ -78,8 +78,12 @@ def init(coro: Awaitable, debug: bool = False) -> None:
             raise
 
 
-def wrap(coro):
-    """Handle exceptions from background tasks."""
+def wrap(coro, warning=True):
+    """Handle exceptions from scheduled tasks."""
+
+    # exceptions from child coroutines are not propagated to parent task when wrapped
+    if warning:
+        log.warning(f"@aio.wrap is deprecated: start background tasks with aio.task()")
 
     @functools.wraps(coro)
     async def run_func(*args, **kwargs):
@@ -94,8 +98,13 @@ def wrap(coro):
             await asyncio.sleep(0)  # force uvloop to stop immediately
 
             if sys.excepthook is dbg.excepthook:
-                traceback.print_exc()
+                traceback.print_exc()  # traceback before pudb
                 pudb.post_mortem()
-            raise
+            raise  # should also print the traceback regardless
 
     return run_func
+
+
+def task(coro, *, name=None):
+    """Schedule task, raising its exceptions."""
+    return asyncio.create_task(wrap(coro, warning=False)(), name=name)
