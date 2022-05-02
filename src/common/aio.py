@@ -86,8 +86,12 @@ def wrap(coro, warning=True):
 
     @functools.wraps(coro)
     async def run_func(*args, **kwargs):
+        decorated: bool = callable(coro)
         try:
-            return await coro(*args, **kwargs)
+            if decorated:
+                return await coro(*args, **kwargs)
+            else:
+                return await coro
         except CancelledError:
             return
         except Exception as e:
