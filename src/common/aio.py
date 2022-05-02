@@ -70,10 +70,14 @@ def init(coro: Awaitable, debug: bool = False) -> None:
     try:
         loop.run_until_complete(coro)
     except RuntimeError as e:
-        if "Event loop stopped before Future completed." in str(e):
-            log.warning(f"{type(e).__name__}: {e}")
-            sys.exit(1)
+        if threading.current_thread() is threading.main_thread():
+            if "Event loop stopped before Future completed." in str(e):
+                log.warning(f"{type(e).__name__}: {e}")
+                sys.exit(1)
+            else:
+                raise
         else:
+            # sys.exit() exits the thread, exceptions can be handled
             raise
 
 
