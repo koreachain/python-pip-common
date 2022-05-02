@@ -7,7 +7,6 @@ import signal
 import sys
 import threading
 import time
-import traceback
 from asyncio import CancelledError
 from asyncio.tasks import Task
 from contextlib import suppress
@@ -92,15 +91,14 @@ def wrap(coro, warning=True):
         except CancelledError:
             return
         except Exception as e:
-            log.error(f"From task {coro.__name__}: {type(e).__name__}: {e}")
+            log.exception(f"From task {coro.__name__}: {type(e).__name__}: {e}")
 
             asyncio.get_event_loop().stop()
             await asyncio.sleep(0)  # force uvloop to stop immediately
 
             if sys.excepthook is dbg.excepthook:
-                traceback.print_exc()  # traceback before pudb
                 pudb.post_mortem()
-            raise  # should also print the traceback regardless
+            raise
 
     return run_func
 
