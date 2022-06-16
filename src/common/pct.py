@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 
-def calc(amount: float, value: float) -> float:
+def get(amount: float, value: float) -> float:
     """Calculate percentage from value."""
     return value / 100 * amount
 
