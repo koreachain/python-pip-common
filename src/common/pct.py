@@ -24,3 +24,8 @@ def add(amount: float, value: float) -> float:
 def sub(amount: float, value: float) -> float:
     """Subtract percentage from value."""
     return value - (value / 100 * amount)
+
+
+def afs(amount: float, value: float) -> float:
+    """Add percentage for subtraction."""
+    return value * 100 / (100 - amount)
