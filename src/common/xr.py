@@ -17,7 +17,7 @@ def main(base: str, quote: str) -> float:
     # FIXME: global monthly rate limit, not per base currency
     limit = 250 // 30 * 60 * 60
 
-    cache = f"{os.environ['XDG_RUNTIME_DIR']}/xr.{base}.json"
+    cache = f"{os.environ['XDG_RUNTIME_DIR']}/xr.{base.lower()}.json"
     rw_lock = InterProcessReaderWriterLock(cache)
 
     if os.path.exists(cache) and os.path.getmtime(cache) + limit >= time.time():
