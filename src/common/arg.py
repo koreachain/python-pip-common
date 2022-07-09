@@ -26,7 +26,7 @@ def path(name: str) -> str:
         return name
 
 
-def parse(doc: str | None) -> SimpleNamespace:
+def parse(doc: Doc) -> SimpleNamespace:
     """Parse options as described in given __doc__."""
     assert isinstance(doc, str)
     parser = docopt(doc)
