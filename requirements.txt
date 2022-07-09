@@ -8,6 +8,7 @@ cryptography>=3.4.7
 docopt-ng>=0.7.2
 fasteners>=0.17.3
 oci>=2.52.1
+orjson>=3.7.5
 pudb>=2020.1
 pwinput>=1.0.2
 PyYAML>=5.4.1
