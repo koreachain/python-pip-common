@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
 
 import builtins
+import sys
 from types import SimpleNamespace
+from typing import Optional
 
 from docopt import docopt
 
 from common import ns
+
+if sys.version_info >= (3, 9, 0):
+    Doc = str | None
+else:
+    Doc = Optional[str]
 
 
 def path(name: str) -> str:

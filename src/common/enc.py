@@ -4,6 +4,7 @@ import base64
 import logging
 import os
 import sys
+from typing import List, Union
 
 import yaml
 from cryptography.fernet import Fernet
@@ -11,17 +12,22 @@ from cryptography.hazmat.primitives.hashes import SHA256
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from pwinput import pwinput
 
+if sys.version_info >= (3, 9, 0):
+    Message = str | list[str]
+else:
+    Message = Union[str, List[str]]
+
 
 class Secret:
     """Hide repr() for secrets in debug logs."""
 
-    def __init__(self, msg: str | bytes) -> None:
-        self.msg: str | bytes = msg
+    def __init__(self, msg: Message) -> None:
+        self.msg: Message = msg
 
     def __repr__(self) -> str:
         return 'Secret(msg="***")'
 
-    def reveal(self) -> str | bytes:
+    def reveal(self) -> Message:
         """Return message whenever requested."""
         return self.msg
 
