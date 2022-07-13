@@ -30,7 +30,7 @@ def conv(base: str, quote: str) -> float:
         )
         data = reply.json()
 
-        with cache_lock.write_lock(), open(cache, "w") as fd:
+        with cache_lock.write_lock(), open(cache, "wb") as fd:
             fd.write(orjson.dumps(data))
 
     return data["rates"][quote]
