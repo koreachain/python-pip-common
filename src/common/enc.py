@@ -10,7 +10,7 @@ import yaml
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.hashes import SHA256
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from pwinput import pwinput
+from getch import getch
 
 if sys.version_info >= (3, 9, 0):
     Message = str | list[str]
@@ -43,6 +43,31 @@ class Crypto(Fernet):
     def decrypt(self, *args, **kwargs) -> Secret:
         """Decrypt message and wrap as Secret()."""
         return Secret(super().decrypt(*args, **kwargs).decode())
+
+
+def stdin(prompt: str = "Password: ") -> str:
+    """Better prompt: https://stackoverflow.com/a/64526061"""
+    print(prompt, end="", flush=True)
+    buf = b""
+    while True:
+        ch = getch().encode()
+        if ch in {b"\n", b"\r", b"\r\n"}:
+            print("")
+            break
+        elif ch == b"\x03":  # Ctrl+C
+            return ""  # or raise KeyboardInterrupt
+        elif ch in {b"\x08", b"\x7f"}:  # Backspace
+            buf = buf[:-1]
+            print(
+                f'\r{(len(prompt)+len(buf)+1)*" "}\r{prompt}{"*" * len(buf)}',
+                end="",
+                flush=True,
+            )
+        else:
+            buf += ch
+            print("*", end="", flush=True)
+
+    return buf.decode()
 
 
 def vault(ocid: str) -> str:
@@ -100,12 +125,12 @@ if __name__ == "__main__":
     else:
         sys.exit("Missing required option: -s salt|-c conf")
 
-    password = pwinput()
+    password = stdin()
     crypto = Crypto(salt, password)
     del salt, password
 
     if sys.argv[3] == "encrypt":
-        msg = sys.argv[4] if len(sys.argv) > 4 else pwinput(prompt="Message: ")
+        msg = sys.argv[4] if len(sys.argv) > 4 else stdin(prompt="Message: ")
         token = crypto.encrypt(msg.encode())
         print(yaml.dump(token))
     elif sys.argv[3] == "decrypt":
