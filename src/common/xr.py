@@ -17,7 +17,7 @@ def conv(base: str, quote: str) -> float:
     # FIXME: global monthly limit, not per base currency: fix with USD as base
     limit = 250 // 30 * 60 * 60
 
-    cache = f"{os.environ['XDG_RUNTIME_DIR']}/xr.{base.lower()}.json"
+    cache = f"/tmp/xr.{base.lower()}.json"
     cache_lock = InterProcessReaderWriterLock(cache)
 
     if os.path.exists(cache) and os.path.getmtime(cache) + limit >= time.time():
