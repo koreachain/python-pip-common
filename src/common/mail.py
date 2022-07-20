@@ -18,7 +18,7 @@ def mail(subject: str, message: str, address: str = "26373564-goldencedar@users.
                 f"""
                 Command "mail" not found, dumping intended message:
                 {subject}
-                {message}
+                {cleandoc(message)}
                 """
             )
         )
