@@ -8,6 +8,13 @@ from common import cmd
 # "laptop", "convertible", "server", "tablet", "handset", "watch", "embedded", as well
 # as the special chassis types "vm" and "container" for virtualized systems that lack an
 # immediate physical chassis.
-chassis: str = cmd.run("LC_ALL=C hostnamectl | awk '/Chassis/{print $2}'").stdout
+__output: list[str] = cmd.run("LC_ALL=C hostnamectl").stdout.splitlines()
+for line in __output:
+    if "Chassis" in line:
+        chassis = line.split()[-1]
+    elif "Virtualization:" in line:
+        chassis = "vm"
+    else:
+        chassis = "unknown"
 
 hostname: str = socket.gethostname()
