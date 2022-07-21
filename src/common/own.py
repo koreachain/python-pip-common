@@ -12,9 +12,11 @@ __output: list[str] = cmd.run("LC_ALL=C hostnamectl").stdout.splitlines()
 for line in __output:
     if "Chassis" in line:
         chassis = line.split()[-1]
+        break
     elif "Virtualization:" in line:
         chassis = "vm"
-    else:
-        chassis = "unknown"
+        break
+else:
+    chassis = "unknown"
 
 hostname: str = socket.gethostname()
