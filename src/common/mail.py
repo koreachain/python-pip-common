@@ -27,5 +27,5 @@ def mail(subject: str, message: str, address: str = "26373564-goldencedar@users.
     cmd.run(
         # if performance matters, shell=False won't start a new shell
         ["mail", "-s", f"[{own.hostname}] {quote(subject)}", address],
-        input=cleandoc(message).encode(),
+        input=cleandoc(message),
     )
