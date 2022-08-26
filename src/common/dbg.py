@@ -4,9 +4,13 @@ import logging
 import sys
 import traceback
 
+import fastlogging
 import pudb
 
-log = logging.getLogger(__name__)
+if "root" in fastlogging.domains:
+    log = fastlogging.domains["root"]
+else:
+    log = logging.getLogger(__name__)
 
 
 def pudb_on_exceptions() -> None:

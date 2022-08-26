@@ -5,9 +5,14 @@ from inspect import cleandoc
 from shlex import quote
 from shutil import which
 
+import fastlogging
+
 from common import cmd, own
 
-log = logging.getLogger(__name__)
+if "root" in fastlogging.domains:
+    log = fastlogging.domains["root"]
+else:
+    log = logging.getLogger(__name__)
 
 
 def mail(subject: str, message: str, address: str = "26373564-goldencedar@users.noreply.gitlab.com") -> None:

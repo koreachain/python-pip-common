@@ -5,6 +5,7 @@ import sys
 import warnings
 from typing import Tuple, Union
 
+import fastlogging
 import requests
 from requests.exceptions import ConnectionError as NetworkError  # overwrites builtin
 from requests.exceptions import HTTPError, Timeout
@@ -19,7 +20,10 @@ if sys.version_info >= (3, 10, 0):
 else:
     HTTPErrors = Union[int, Tuple[()], Tuple[int]]
 
-log = logging.getLogger(__name__)
+if "root" in fastlogging.domains:
+    log = fastlogging.domains["root"]
+else:
+    log = logging.getLogger(__name__)
 
 
 class RetryableHTTPError(Exception):

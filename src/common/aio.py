@@ -12,13 +12,17 @@ from asyncio.tasks import Task
 from contextlib import suppress
 from typing import Awaitable
 
+import fastlogging
 import pudb
 import uvloop
 from aiodebug import log_slow_callbacks
 
 from common import dbg
 
-log = logging.getLogger(__name__)
+if "root" in fastlogging.domains:
+    log = fastlogging.domains["root"]
+else:
+    log = logging.getLogger(__name__)
 
 
 class HandleSIGUSR2:
