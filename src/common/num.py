@@ -18,7 +18,7 @@ def exp_range(
     stop: int | float,
     count: int,
     ntype: Type[int | float] | None = None,
-    truncate: int | None = None,
+    round: int | None = None,
     unique: bool = False,
 ) -> tuple[int | float, ...]:
     """Return exponential range of ints or floats."""
@@ -29,8 +29,8 @@ def exp_range(
 
     if ntype is int:
         scale = np.around(scale).astype(int)
-    elif truncate:
-        scale = np.around(scale, decimals=truncate)
+    elif round:
+        scale = np.around(scale, decimals=round)
 
     if unique:
         scale = np.unique(scale)
