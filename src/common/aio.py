@@ -2,6 +2,7 @@
 
 import asyncio
 import functools
+import inspect
 import logging
 import signal
 import sys
@@ -10,7 +11,7 @@ import time
 from asyncio import CancelledError
 from asyncio.tasks import Task
 from contextlib import suppress
-from typing import Awaitable
+from typing import Awaitable, Callable
 
 import fastlogging
 import pudb
@@ -23,6 +24,8 @@ if "root" in fastlogging.domains:
     log = fastlogging.domains["root"]
 else:
     log = logging.getLogger(__name__)
+
+_atexit = []
 
 
 class HandleSIGUSR2:
@@ -62,6 +65,26 @@ else:
     log.warning("Import aio from the main thread: writing stacks on SIGUSR2 disabled")
 
 
+def atexit(cb: Callable):
+    """async atexit.register(), use partial for args."""
+    global _atexit
+    _atexit.append(cb)
+
+
+async def _atexit_run():
+    """Run aio.atexit() callbacks, in reverse order."""
+    global _atexit
+    while _atexit:
+        cb = _atexit.pop()
+        try:
+            # handle blocking callbacks too
+            result = cb()
+            if inspect.isawaitable(result):
+                await result
+        except Exception as e:
+            log.error(f"{cb.__name__}: {type(e).__name__}: {e}")
+
+
 def init(coro: Awaitable, debug: bool = False) -> None:
     """Wrap call to asyncio.run(), use uvloop."""
     loop = uvloop.new_event_loop()
@@ -73,16 +96,19 @@ def init(coro: Awaitable, debug: bool = False) -> None:
 
     try:
         loop.run_until_complete(coro)
-    except RuntimeError as e:
-        if threading.current_thread() is threading.main_thread():
-            if "Event loop stopped before Future completed." in str(e):
-                log.warning(f"{type(e).__name__}: {e}")
-                sys.exit(1)
-            else:
-                raise
-        else:
-            # sys.exit() exits the thread, exceptions can be handled
-            raise
+    except Exception as e:
+        # sys.exit() exits the thread, exceptions can still be handled
+        if (
+            isinstance(e, RuntimeError)
+            and threading.current_thread() is threading.main_thread()
+            and "Event loop stopped before Future completed" in str(e)
+        ):
+            log.warning(f"{type(e).__name__}: {e}")
+            sys.exit(1)
+
+        raise
+    finally:
+        loop.run_until_complete(_atexit_run())
 
 
 def wrap(coro, warning=True):
@@ -104,6 +130,8 @@ def wrap(coro, warning=True):
             return
         except Exception as e:
             log.exception(f"From task {coro.__name__}: {type(e).__name__}: {e}")
+
+            await _atexit_run()
 
             asyncio.get_event_loop().stop()
             await asyncio.sleep(0)  # force uvloop to stop immediately
