@@ -25,7 +25,31 @@ if "root" in fastlogging.domains:
 else:
     log = logging.getLogger(__name__)
 
-_atexit = []
+
+class AtExit:
+    """async atexit, accepts async and blocking functions."""
+
+    def __init__(self):
+        self._lock = asyncio.Lock()
+        self._tasks = []
+
+    def register(self, cb: Callable) -> None:
+        """async atexit.register(), use partial for args."""
+        self._tasks.append(cb)
+
+    async def run(self) -> None:
+        """Run aio.atexit() callbacks, in reverse order."""
+        # lock to ensure all tasks are awaited before stop()
+        async with self._lock:
+            while self._tasks:
+                cb = self._tasks.pop()
+                try:
+                    # handle blocking callbacks too
+                    result = cb()
+                    if inspect.isawaitable(result):
+                        await result
+                except Exception as e:
+                    log.error(f"{cb.__name__}: {type(e).__name__}: {e}")
 
 
 class HandleSIGUSR2:
@@ -59,30 +83,12 @@ class HandleSIGUSR2:
                 await asyncio.sleep(1)
 
 
+_atexit = AtExit()
+
 if threading.current_thread() is threading.main_thread():
     HandleSIGUSR2()
 else:
     log.warning("Import aio from the main thread: writing stacks on SIGUSR2 disabled")
-
-
-def atexit(cb: Callable):
-    """async atexit.register(), use partial for args."""
-    global _atexit
-    _atexit.append(cb)
-
-
-async def _atexit_run():
-    """Run aio.atexit() callbacks, in reverse order."""
-    global _atexit
-    while _atexit:
-        cb = _atexit.pop()
-        try:
-            # handle blocking callbacks too
-            result = cb()
-            if inspect.isawaitable(result):
-                await result
-        except Exception as e:
-            log.error(f"{cb.__name__}: {type(e).__name__}: {e}")
 
 
 def init(coro: Awaitable, debug: bool = False) -> None:
@@ -108,7 +114,7 @@ def init(coro: Awaitable, debug: bool = False) -> None:
 
         raise
     finally:
-        loop.run_until_complete(_atexit_run())
+        loop.run_until_complete(_atexit.run())
 
 
 def wrap(coro, warning=True):
@@ -131,7 +137,7 @@ def wrap(coro, warning=True):
         except Exception as e:
             log.exception(f"From task {coro.__name__}: {type(e).__name__}: {e}")
 
-            await _atexit_run()
+            await _atexit.run()
 
             asyncio.get_event_loop().stop()
             await asyncio.sleep(0)  # force uvloop to stop immediately
@@ -146,3 +152,8 @@ def wrap(coro, warning=True):
 def task(coro, *, name=None):
     """Schedule task, raising its exceptions."""
     return asyncio.create_task(wrap(coro, warning=False)(), name=name)
+
+
+def atexit(cb: Callable) -> None:
+    """async atexit.register(), use partial for args."""
+    _atexit.register(cb)
