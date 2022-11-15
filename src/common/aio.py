@@ -2,7 +2,6 @@
 
 import asyncio
 import functools
-import inspect
 import logging
 import signal
 import sys
@@ -11,12 +10,12 @@ import time
 from asyncio import CancelledError
 from asyncio.tasks import Task
 from contextlib import suppress
-from typing import Awaitable, Callable
+from typing import Coroutine
 
+import aiodebug.log_slow_callbacks
 import fastlogging
 import pudb
 import uvloop
-from aiodebug import log_slow_callbacks
 
 from common import dbg
 
@@ -24,34 +23,7 @@ if "root" in fastlogging.domains:
     log = fastlogging.domains["root"]
 else:
     log = logging.getLogger(__name__)
-
-
-class AtExit:
-    """async atexit, accepts async and blocking functions."""
-
-    def __init__(self):
-        self._lock = asyncio.Lock()
-        self._tasks = []
-
-    def register(self, cb: Callable) -> None:
-        """async atexit.register(), use partial for args."""
-        self._tasks.append(cb)
-
-    async def run(self) -> None:
-        """Run aio.atexit() callbacks, in reverse order."""
-        signal.signal(signal.SIGINT, signal.SIG_IGN)
-
-        # lock to ensure all tasks are awaited before stop()
-        async with self._lock:
-            while self._tasks:
-                cb = self._tasks.pop()
-                try:
-                    # handle blocking callbacks too
-                    result = cb()
-                    if inspect.isawaitable(result):
-                        await result
-                except Exception as e:
-                    log.error(f"{cb.__name__}: {type(e).__name__}: {e}")
+    aiodebug.log_slow_callbacks.enable(0.1)
 
 
 class HandleSIGUSR2:
@@ -85,10 +57,8 @@ class HandleSIGUSR2:
                 await asyncio.sleep(1)
 
 
-_atexit = AtExit()
 _main_thread = threading.current_thread() is threading.main_thread()
 _loop_stopped = False
-
 
 if _main_thread:
     HandleSIGUSR2()
@@ -96,27 +66,18 @@ else:
     log.warning("Import aio from the main thread: writing stacks on SIGUSR2 disabled")
 
 
-def init(coro: Awaitable, debug: bool = False) -> None:
+def init(coro: Coroutine, debug: bool = False) -> None:
     """Wrap call to asyncio.run(), use uvloop."""
-    loop = uvloop.new_event_loop()
-
-    if debug:
-        loop.set_debug(enabled=debug)
-    else:
-        log_slow_callbacks.enable(0.1)
+    uvloop.install()
 
     try:
-        loop.run_until_complete(coro)
-    except Exception as e:
+        asyncio.run(coro, debug=debug)
+    except Exception:
         # sys.exit() just exits the thread
-        if _main_thread and _loop_stopped:
+        if _loop_stopped and _main_thread:
             sys.exit(1)
         else:
-            log.error(f"{type(e).__name__}: {e}")
-            raise  # also needed to trigger pudb
-    finally:
-        if not _loop_stopped:
-            loop.run_until_complete(_atexit.run())
+            raise  # also needed for pudb
 
 
 def wrap(coro, warning=True):
@@ -139,13 +100,12 @@ def wrap(coro, warning=True):
         except Exception as e:
             log.exception(f"From task {coro.__name__}: {type(e).__name__}: {e}")
 
-            await _atexit.run()
-
             global _loop_stopped
             _loop_stopped = True
             asyncio.get_event_loop().stop()
             await asyncio.sleep(0)  # force uvloop to stop immediately
 
+            # asyncio_atexit is run after debugging when raised here!
             if sys.excepthook is dbg.excepthook:
                 sys.excepthook = sys.__excepthook__
                 pudb.post_mortem()
@@ -159,8 +119,3 @@ def wrap(coro, warning=True):
 def task(coro, *, name=None):
     """Schedule bg task, making its exceptions fatal."""
     return asyncio.create_task(wrap(coro, warning=False)(), name=name)
-
-
-def atexit(cb: Callable) -> None:
-    """async atexit.register(), use partial for args."""
-    _atexit.register(cb)
