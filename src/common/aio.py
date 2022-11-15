@@ -39,6 +39,8 @@ class AtExit:
 
     async def run(self) -> None:
         """Run aio.atexit() callbacks, in reverse order."""
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+
         # lock to ensure all tasks are awaited before stop()
         async with self._lock:
             while self._tasks:
@@ -84,8 +86,11 @@ class HandleSIGUSR2:
 
 
 _atexit = AtExit()
+_main_thread = threading.current_thread() is threading.main_thread()
+_loop_stopped = False
 
-if threading.current_thread() is threading.main_thread():
+
+if _main_thread:
     HandleSIGUSR2()
 else:
     log.warning("Import aio from the main thread: writing stacks on SIGUSR2 disabled")
@@ -103,22 +108,18 @@ def init(coro: Awaitable, debug: bool = False) -> None:
     try:
         loop.run_until_complete(coro)
     except Exception as e:
-        # sys.exit() exits the thread, exceptions can still be handled
-        if (
-            isinstance(e, RuntimeError)
-            and threading.current_thread() is threading.main_thread()
-            and "Event loop stopped before Future completed" in str(e)
-        ):
-            log.warning(f"{type(e).__name__}: {e}")
+        # sys.exit() just exits the thread
+        if _main_thread and _loop_stopped:
             sys.exit(1)
-
-        raise
+        else:
+            log.error(f"{type(e).__name__}: {e}")
+            raise
     finally:
-        loop.run_until_complete(_atexit.run())
+        asyncio.run(_atexit.run())
 
 
 def wrap(coro, warning=True):
-    """Handle exceptions from scheduled tasks."""
+    """Make scheduled tasks exceptions fatal, use create_task() if handling them."""
 
     # exceptions from child coroutines are not propagated to parent task when wrapped
     if warning:
@@ -137,23 +138,25 @@ def wrap(coro, warning=True):
         except Exception as e:
             log.exception(f"From task {coro.__name__}: {type(e).__name__}: {e}")
 
-            await _atexit.run()
-
+            global _loop_stopped
+            _loop_stopped = True
             asyncio.get_event_loop().stop()
             await asyncio.sleep(0)  # force uvloop to stop immediately
 
             if sys.excepthook is dbg.excepthook:
+                sys.excepthook = sys.__excepthook__
                 pudb.post_mortem()
-            raise
 
     return run_func
 
 
 def task(coro, *, name=None):
-    """Schedule task, raising its exceptions."""
+    """Schedule bg task, making its exceptions fatal."""
     return asyncio.create_task(wrap(coro, warning=False)(), name=name)
 
 
 def atexit(cb: Callable) -> None:
     """async atexit.register(), use partial for args."""
+    if sys.excepthook is dbg.excepthook:
+        log.warning("aio.atexit() comes after pudb() for exceptions in aio.task()")
     _atexit.register(cb)
