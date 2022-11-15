@@ -113,9 +113,10 @@ def init(coro: Awaitable, debug: bool = False) -> None:
             sys.exit(1)
         else:
             log.error(f"{type(e).__name__}: {e}")
-            raise
+            raise  # also needed to trigger pudb
     finally:
-        asyncio.run(_atexit.run())
+        if not _loop_stopped:
+            loop.run_until_complete(_atexit.run())
 
 
 def wrap(coro, warning=True):
@@ -138,6 +139,8 @@ def wrap(coro, warning=True):
         except Exception as e:
             log.exception(f"From task {coro.__name__}: {type(e).__name__}: {e}")
 
+            await _atexit.run()
+
             global _loop_stopped
             _loop_stopped = True
             asyncio.get_event_loop().stop()
@@ -146,6 +149,9 @@ def wrap(coro, warning=True):
             if sys.excepthook is dbg.excepthook:
                 sys.excepthook = sys.__excepthook__
                 pudb.post_mortem()
+                return
+
+            raise
 
     return run_func
 
@@ -157,6 +163,4 @@ def task(coro, *, name=None):
 
 def atexit(cb: Callable) -> None:
     """async atexit.register(), use partial for args."""
-    if sys.excepthook is dbg.excepthook:
-        log.warning("aio.atexit() comes after pudb() for exceptions in aio.task()")
     _atexit.register(cb)
