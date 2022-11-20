@@ -2,6 +2,7 @@
 
 import asyncio
 import functools
+import inspect
 import logging
 import signal
 import sys
@@ -10,20 +11,48 @@ import time
 from asyncio import CancelledError
 from asyncio.tasks import Task
 from contextlib import suppress
-from typing import Coroutine
+from typing import Awaitable, Callable
 
-import aiodebug.log_slow_callbacks
 import fastlogging
-import pudb
 import uvloop
-
-from common import dbg
 
 if "root" in fastlogging.domains:
     log = fastlogging.domains["root"]
 else:
     log = logging.getLogger(__name__)
-    aiodebug.log_slow_callbacks.enable(0.1)
+
+
+_main_thread = threading.current_thread() is threading.main_thread()
+_loop_stopped = False
+
+
+class AtExit:
+    """async atexit, accepts async and blocking functions."""
+
+    def __init__(self):
+        self._lock = asyncio.Lock()
+        self._tasks = []
+
+    def register(self, func: Callable, *args, **kwargs) -> None:
+        """Register function to run before loop is stopped."""
+        self._tasks.append((func, args, kwargs))
+
+    async def run(self) -> None:
+        """Run aio.atexit() callbacks, in reverse order."""
+        # ignore additional keyboard interrupts (ctrl+c 2x)
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+        # lock to ensure all tasks are awaited before stop()
+        async with self._lock:
+            while self._tasks:
+                func, args, kwargs = self._tasks.pop()
+                try:
+                    # handle blocking callbacks too
+                    result = func(*args, **kwargs)
+                    if inspect.isawaitable(result):
+                        await result
+                except Exception as e:
+                    log.error(f"{func.__name__}: {type(e).__name__}: {e}")
 
 
 class HandleSIGUSR2:
@@ -57,8 +86,7 @@ class HandleSIGUSR2:
                 await asyncio.sleep(1)
 
 
-_main_thread = threading.current_thread() is threading.main_thread()
-_loop_stopped = False
+atexit = AtExit()
 
 if _main_thread:
     HandleSIGUSR2()
@@ -66,22 +94,29 @@ else:
     log.warning("Import aio from the main thread: writing stacks on SIGUSR2 disabled")
 
 
-def init(coro: Coroutine, debug: bool = False) -> None:
+def init(coro: Awaitable, debug: bool = False) -> None:  # debug has uses on its own
     """Wrap call to asyncio.run(), use uvloop."""
-    uvloop.install()
+    loop = uvloop.new_event_loop()
+
+    if debug or (isinstance(log, logging.Logger) and log.isEnabledFor(logging.DEBUG)):
+        loop.set_debug(enabled=debug)
 
     try:
-        asyncio.run(coro, debug=debug)
-    except Exception:
+        loop.run_until_complete(coro)
+    except Exception as e:
         # sys.exit() just exits the thread
-        if _loop_stopped and _main_thread:
+        if _main_thread and _loop_stopped:
             sys.exit(1)
         else:
-            raise  # also needed for pudb
+            log.error(f"{type(e).__name__}: {e}")
+            raise  # also needed to trigger pudb
+    finally:
+        if not _loop_stopped:
+            loop.run_until_complete(atexit.run())
 
 
 def wrap(coro, warning=True):
-    """Make scheduled tasks exceptions fatal, use create_task() if handling them."""
+    """Make scheduled tasks exceptions fatal, use create_task() for handling them."""
 
     # exceptions from child coroutines are not propagated to parent task when wrapped
     if warning:
@@ -98,20 +133,16 @@ def wrap(coro, warning=True):
         except CancelledError:
             return
         except Exception as e:
-            log.exception(f"From task {coro.__name__}: {type(e).__name__}: {e}")
+            log.error(f"From task {coro.__name__}: {type(e).__name__}: {e}")
+
+            await atexit.run()
 
             global _loop_stopped
             _loop_stopped = True
             asyncio.get_event_loop().stop()
             await asyncio.sleep(0)  # force uvloop to stop immediately
 
-            # asyncio_atexit is run after debugging when raised here!
-            if sys.excepthook is dbg.excepthook:
-                sys.excepthook = sys.__excepthook__
-                pudb.post_mortem()
-                return
-
-            raise
+            sys.excepthook(*sys.exc_info())  # type: ignore
 
     return run_func
 

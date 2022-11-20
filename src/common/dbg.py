@@ -2,7 +2,7 @@
 
 import logging
 import sys
-import traceback
+from functools import partial
 
 import fastlogging
 import pudb
@@ -15,12 +15,14 @@ else:
 
 def pudb_on_exceptions() -> None:
     """Launch a pudb breakpoint on unhandled exceptions."""
-    if sys.excepthook is not sys.__excepthook__:
-        log.warning("sys.excepthook was already modified, overwriting…")
-    sys.excepthook = excepthook
+    sys.excepthook = partial(excepthook, sys.excepthook)
 
 
-def excepthook(exc_type, exc_val, exc_tb):
+def excepthook(prev_hook, exc_type, exc_val, exc_tb):
     """Print traceback and launch post-mortem debugging."""
-    traceback.print_tb(exc_tb)
-    pudb.post_mortem(exc_tb)
+    prev_hook(exc_type, exc_val, exc_tb)
+
+    if issubclass(exc_type, KeyboardInterrupt):
+        return
+
+    pudb.post_mortem(exc_tb, exc_type, exc_val)
