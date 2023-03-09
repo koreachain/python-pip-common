@@ -2,12 +2,10 @@
 
 import builtins
 import sys
-from types import SimpleNamespace
 from typing import Optional
 
+from box import Box
 from docopt import docopt
-
-from common import ns
 
 if sys.version_info >= (3, 9, 0):
     Doc = str | None
@@ -26,7 +24,7 @@ def path(name: str) -> str:
         return name
 
 
-def parse(doc: Doc) -> SimpleNamespace:
+def parse(doc: Doc) -> Box:
     """Parse options as described in given __doc__."""
     assert isinstance(doc, str)
     parser = docopt(doc)
@@ -71,4 +69,4 @@ def parse(doc: Doc) -> SimpleNamespace:
                 value = vars(builtins)[tags[name]](value)
         args[name] = value
 
-    return ns({k.replace("-", "_"): v for k, v in args.items()})
+    return Box({k.replace("-", "_"): v for k, v in args.items()})
