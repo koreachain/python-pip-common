@@ -9,6 +9,7 @@ import sys
 import threading
 import time
 from asyncio import CancelledError
+from asyncio import TimeoutError as AsyncioTimeout  # overrides built-in
 from asyncio.tasks import Task
 from contextlib import suppress
 from typing import Awaitable, Callable
@@ -150,3 +151,22 @@ def wrap(coro, warning=True):
 def task(coro, *, name=None):
     """Schedule bg task, making its exceptions fatal."""
     return asyncio.create_task(wrap(coro, warning=False)(), name=name)
+
+
+class Lock(asyncio.Lock):
+    def __init__(self):
+        super().__init__()
+
+    async def acquire(self, wait=True) -> bool:
+        """Acquire the lock. If wait is set, block, else return False."""
+        if wait:
+            return await super().acquire()
+        else:
+            if self.locked():
+                return False
+            else:
+                # workaround self.locked() race conditions and avoid blocking
+                try:
+                    return await asyncio.wait_for(super().acquire(), timeout=1e-9)
+                except AsyncioTimeout:
+                    return False
