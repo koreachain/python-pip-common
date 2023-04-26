@@ -3,7 +3,6 @@
 import logging
 from inspect import cleandoc
 from shlex import quote
-from shutil import which
 
 import fastlogging
 
@@ -17,20 +16,20 @@ else:
 
 def mail(subject: str, message: str, address: str = "26373564-goldencedar@users.noreply.gitlab.com") -> None:
     """Email using existing system MTA."""
-    if not which("mail"):
+    try:
+        cmd.run(
+            # if performance matters, shell=False won't start a new shell
+            ["mail", "-s", f"[{own.hostname}] {quote(subject)}", address],
+            input=cleandoc(message),
+        )
+    except Exception as e:
         log.warning(
             cleandoc(
                 f"""
-                Command "mail" not found, dumping intended message:
+                {type(e).__name__}: {e} - dumping intended message:
                 {subject}
                 {cleandoc(message)}
                 """
             )
         )
         return
-
-    cmd.run(
-        # if performance matters, shell=False won't start a new shell
-        ["mail", "-s", f"[{own.hostname}] {quote(subject)}", address],
-        input=cleandoc(message),
-    )
