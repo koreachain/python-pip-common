@@ -1,11 +1,19 @@
 #!/usr/bin/env python3
 
+import logging
 import os
 import socket
 
+import fastlogging
 import requests
+from requests import Timeout
 
 from common import cmd
+
+if "root" in fastlogging.domains:
+    log = fastlogging.domains["root"]
+else:
+    log = logging.getLogger(__name__)
 
 # From `man hostnamectl`: Currently, the following chassis types are defined: "desktop",
 # "laptop", "convertible", "server", "tablet", "handset", "watch", "embedded", as well
@@ -31,7 +39,12 @@ country: str
 
 def _ip() -> str:
     global ip
-    reply = requests.get("https://checkip.amazonaws.com")
+    try:
+        reply = requests.get("https://checkip.amazonaws.com", timeout=5)
+    except Timeout as e:
+        log.warning(f"{type(e).__name__}: {e}, fallback to Cloudflare")
+        reply = requests.get("https://icanhazip.com", timeout=15)
+
     ip = reply.text.strip()
 
     return ip
