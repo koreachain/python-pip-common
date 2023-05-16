@@ -8,6 +8,7 @@ import signal
 import sys
 import threading
 import time
+import warnings
 from asyncio import CancelledError
 from asyncio import TimeoutError as AsyncioTimeout  # overrides built-in
 from asyncio.tasks import Task
@@ -19,9 +20,10 @@ import uvloop
 
 if "root" in fastlogging.domains:
     log = fastlogging.domains["root"]
+    _debugging = log.level <= fastlogging.DEBUG
 else:
     log = logging.getLogger(__name__)
-
+    _debugging = log.isEnabledFor(logging.DEBUG)  # `log.level` is error prone
 
 _main_thread = threading.current_thread() is threading.main_thread()
 _loop_stopped = False
@@ -99,13 +101,10 @@ def init(coro: Awaitable, debug: bool | None = None) -> None:  # debug has its o
     """Wrap call to asyncio.run(), use uvloop."""
     loop = uvloop.new_event_loop()
 
-    if debug is None:
-        if "root" in fastlogging.domains:
-            debug = log.level <= fastlogging.DEBUG
-        else:
-            debug = log.isEnabledFor(logging.DEBUG)  # `log.level` is error prone
-    assert debug is not None
-    loop.set_debug(loop.get_debug() or debug)  # possibly enabled via cli or env
+    if (_debugging if debug is None else debug) or loop.get_debug():  # via cli or env
+        loop.set_debug(True)
+        logging.getLogger("asyncio").setLevel(logging.DEBUG)
+        warnings.filterwarnings("always", category=ResourceWarning)
 
     try:
         loop.run_until_complete(coro)
