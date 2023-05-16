@@ -95,12 +95,17 @@ else:
     log.warning("Import aio from the main thread: writing stacks on SIGUSR2 disabled")
 
 
-def init(coro: Awaitable, debug: bool = False) -> None:  # debug has uses on its own
+def init(coro: Awaitable, debug: bool | None = None) -> None:  # debug has its own uses
     """Wrap call to asyncio.run(), use uvloop."""
     loop = uvloop.new_event_loop()
 
-    if debug or (isinstance(log, logging.Logger) and log.isEnabledFor(logging.DEBUG)):
-        loop.set_debug(enabled=debug)
+    if debug is None:
+        if "root" in fastlogging.domains:
+            debug = log.level <= fastlogging.DEBUG
+        else:
+            debug = log.isEnabledFor(logging.DEBUG)  # `log.level` is error prone
+    assert debug is not None
+    loop.set_debug(loop.get_debug() or debug)  # possibly enabled via cli or env
 
     try:
         loop.run_until_complete(coro)
