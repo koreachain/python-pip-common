@@ -148,9 +148,19 @@ def wrap(coro, warning=True):
     return run_func
 
 
+_bg_tasks = set()
+
+
 def task(coro, *, name=None):
     """Schedule bg task, making its exceptions fatal."""
-    return asyncio.create_task(wrap(coro, warning=False)(), name=name)
+    _task = asyncio.create_task(wrap(coro, warning=False)(), name=name)
+
+    # use a strong reference, to stop a task from disappearing mid-execution:
+    # https://docs.python.org/3/library/asyncio-task.html#asyncio.create_task
+    _bg_tasks.add(_task)
+    _task.add_done_callback(_bg_tasks.discard)
+
+    return _task
 
 
 class Lock(asyncio.Lock):
