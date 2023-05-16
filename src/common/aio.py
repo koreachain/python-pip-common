@@ -120,6 +120,18 @@ def init(coro: Awaitable, debug: bool | None = None) -> None:  # debug has its o
             loop.run_until_complete(atexit.run())
 
 
+_bg_tasks = set()
+
+
+def ref(_task: Task) -> Task:
+    # use a strong reference, to stop a task from disappearing mid-execution:
+    # https://docs.python.org/3/library/asyncio-task.html#asyncio.create_task
+    _bg_tasks.add(_task)
+    _task.add_done_callback(_bg_tasks.discard)
+
+    return _task
+
+
 def wrap(coro, warning=True):
     """Make scheduled tasks exceptions fatal, use create_task() for handling them."""
 
@@ -152,19 +164,9 @@ def wrap(coro, warning=True):
     return run_func
 
 
-_bg_tasks = set()
-
-
 def task(coro, *, name=None):
     """Schedule bg task, making its exceptions fatal."""
-    _task = asyncio.create_task(wrap(coro, warning=False)(), name=name)
-
-    # use a strong reference, to stop a task from disappearing mid-execution:
-    # https://docs.python.org/3/library/asyncio-task.html#asyncio.create_task
-    _bg_tasks.add(_task)
-    _task.add_done_callback(_bg_tasks.discard)
-
-    return _task
+    return ref(asyncio.create_task(wrap(coro, warning=False)(), name=name))
 
 
 class Lock(asyncio.Lock):
