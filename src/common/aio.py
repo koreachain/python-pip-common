@@ -10,7 +10,7 @@ import threading
 import time
 import warnings
 from asyncio import CancelledError
-from asyncio import TimeoutError as AsyncioTimeout  # overrides built-in
+from asyncio import TimeoutError as AsyncioTimeout  # built-in on Python >=3.11
 from asyncio.tasks import Task
 from contextlib import suppress
 from typing import Awaitable, Callable
@@ -167,14 +167,6 @@ def wrap(coro, warning=True):
 def task(coro, *, name=None):
     """Schedule bg task, making its exceptions fatal."""
     return ref(asyncio.create_task(wrap(coro, warning=False)(), name=name))
-
-
-async def wait_for(coro, timeout):
-    """Wait for coroutine or Future to complete, with timeout."""
-    try:
-        return await asyncio.wait_for(coro, timeout)
-    except AsyncioTimeout as e:
-        raise AsyncioTimeout(f"Forced timeout on {coro}") from e
 
 
 class Lock(asyncio.Lock):
