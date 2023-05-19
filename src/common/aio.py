@@ -169,6 +169,14 @@ def task(coro, *, name=None):
     return ref(asyncio.create_task(wrap(coro, warning=False)(), name=name))
 
 
+async def wait_for(coro, timeout):
+    """Wait for coroutine or Future to complete, with timeout."""
+    try:
+        return await asyncio.wait_for(coro, timeout)
+    except AsyncioTimeout as e:
+        raise AsyncioTimeout(f"Forced timeout on {coro}") from e
+
+
 class Lock(asyncio.Lock):
     def __init__(self):
         super().__init__()
