@@ -25,12 +25,11 @@ else:
     log = logging.getLogger(__name__)
     _debugging = log.isEnabledFor(logging.DEBUG)  # `log.level` is error prone
 
-_main_thread = threading.current_thread() is threading.main_thread()
 _loop_stopped = False
 
 
 class AtExit:
-    """async atexit, accepts async and blocking functions."""
+    """async atexit, accepts async and blocking callbacks."""
 
     def __init__(self):
         self._lock = asyncio.Lock()
@@ -91,7 +90,7 @@ class HandleSIGUSR2:
 
 _atexit = AtExit()
 
-if _main_thread:
+if threading.current_thread() is threading.main_thread():
     HandleSIGUSR2()
 else:
     log.warning("Import aio from the main thread: writing stacks on SIGUSR2 disabled")
@@ -109,8 +108,8 @@ def init(coro: Awaitable, debug: bool | None = None) -> None:  # debug has its o
     try:
         loop.run_until_complete(coro)
     except Exception as e:
-        # sys.exit() just exits the thread
-        if _main_thread and _loop_stopped:
+        # sys.exit() will exit the current thread
+        if threading.current_thread() is threading.main_thread() and _loop_stopped:
             sys.exit(1)
         else:
             log.error(f"{type(e).__name__}: {e}")
@@ -177,12 +176,12 @@ class Lock(asyncio.Lock):
         """Acquire the lock. If wait is set, block, else return False."""
         if wait:
             return await super().acquire()
-        else:
-            if self.locked():
-                return False
-            else:
-                # workaround self.locked() race conditions and avoid blocking
-                try:
-                    return await asyncio.wait_for(super().acquire(), timeout=1e-9)
-                except AsyncioTimeout:
-                    return False
+
+        if self.locked():
+            return False
+
+        # workaround any self.locked() race conditions and avoid blocking
+        try:
+            return await asyncio.wait_for(super().acquire(), timeout=1e-9)
+        except AsyncioTimeout:
+            return False
