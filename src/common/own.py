@@ -41,7 +41,7 @@ def _ip() -> str:
     global ip
     try:
         reply = requests.get("https://checkip.amazonaws.com", timeout=5)
-    except Timeout as e:
+    except Exception as e:
         log.warning(f"{type(e).__name__}: {e}, fallback to Cloudflare")
         reply = requests.get("https://icanhazip.com", timeout=15)
 
@@ -52,7 +52,7 @@ def _ip() -> str:
 
 def _country() -> str:
     global country
-    reply = requests.get("https://api.iplocation.net", params={"ip": _ip()})
+    reply = requests.get("https://api.iplocation.net", params={"ip": ip})
     country = reply.json()["country_code2"]
 
     return country

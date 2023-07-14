@@ -156,7 +156,7 @@ def wrap(coro, warning=True):
             global _loop_stopped
             _loop_stopped = True
             asyncio.get_event_loop().stop()
-            await asyncio.sleep(0)  # force uvloop to stop immediately
+            await asyncio.sleep(0)  # yield so uvloop can stop immediately
 
             sys.excepthook(*sys.exc_info())  # type: ignore
 
