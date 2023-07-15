@@ -6,7 +6,6 @@ import socket
 
 import fastlogging
 import requests
-from requests import Timeout
 
 from common import cmd
 
@@ -52,7 +51,7 @@ def _ip() -> str:
 
 def _country() -> str:
     global country
-    reply = requests.get("https://api.iplocation.net", params={"ip": ip})
+    reply = requests.get("https://api.iplocation.net", params={"ip": __getattr__("ip")})
     country = reply.json()["country_code2"]
 
     return country
