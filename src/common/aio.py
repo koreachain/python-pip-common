@@ -88,7 +88,7 @@ class HandleSIGUSR2:
                 await asyncio.sleep(1)
 
 
-_atexit = AtExit()
+atexit = AtExit()
 
 if threading.current_thread() is threading.main_thread():
     HandleSIGUSR2()
@@ -116,7 +116,7 @@ def init(coro: Awaitable, debug: bool | None = None) -> None:  # debug has its o
             raise  # also needed to trigger pudb
     finally:
         if not _loop_stopped:
-            loop.run_until_complete(_atexit.run())
+            loop.run_until_complete(atexit.run())
 
 
 _bg_tasks = set()
@@ -151,7 +151,7 @@ def wrap(coro, warning=True):
         except Exception as e:
             log.error(f"From task {coro.__name__}: {type(e).__name__}: {e}")
 
-            await _atexit.run()
+            await atexit.run()
 
             global _loop_stopped
             _loop_stopped = True
