@@ -16,4 +16,4 @@ pudb>=2020.1
 PyYAML>=5.4.1
 requests>=2.26.0
 tenacity>=8.0.1
-uvloop>=0.15.2
+uvloop>=0.14.0
