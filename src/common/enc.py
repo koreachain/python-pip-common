@@ -13,9 +13,9 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from getch import getch
 
 if sys.version_info >= (3, 9, 0):
-    Message = str | list[str]
+    Message = str | bytes | list[str] | list[bytes]
 else:
-    Message = Union[str, List[str]]
+    Message = Union[str, bytes, List[str], List[bytes]]
 
 
 class Secret:
