@@ -24,8 +24,12 @@ def path(name: str) -> str:
         return name
 
 
-def parse(doc: Doc) -> Box:
+def parse(doc: Doc | None = None, names: dict | None = None) -> Box:
     """Parse options as described in given __doc__."""
+    assert doc or names
+    if not doc:
+        doc = names["__doc__"]
+
     assert isinstance(doc, str)
     parser = docopt(doc)
 
@@ -59,14 +63,13 @@ def parse(doc: Doc) -> Box:
                     tag, val = word.strip("<>").split(":")
                     tags.update({tag: val})
 
+    caller_globals = names or {}
+    builtins_dict = vars(builtins)
     args = {}
     for key, value in parser.items():
         name = key.lstrip("-").strip("<>").split(":")[0]
         if name in tags and value is not None:
-            if tags[name] in globals():
-                value = globals()[tags[name]](value)
-            else:
-                value = vars(builtins)[tags[name]](value)
-        args[name] = value
+            value = (caller_globals.get(tags[name]) or builtins_dict[tags[name]])(value)
+        args[name.replace("-", "_")] = value
 
-    return Box({k.replace("-", "_"): v for k, v in args.items()})
+    return Box(args, frozen_box=True)
