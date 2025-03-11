@@ -164,7 +164,7 @@ def wrap(coro, warning=True):
 
 
 def task(coro, *, name=None):
-    """Schedule bg task, making its exceptions fatal."""
+    """Schedule bg task. Makes its exceptions fatal. Unhides print() from bg tasks."""
     return ref(asyncio.create_task(wrap(coro, warning=False)(), name=name))
 
 

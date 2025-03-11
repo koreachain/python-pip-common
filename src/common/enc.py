@@ -133,6 +133,13 @@ if __name__ == "__main__":
         msg = sys.argv[4] if len(sys.argv) > 4 else stdin(prompt="Message: ")
         token = crypto.encrypt(msg.encode())
         print(yaml.dump(token))
+    if sys.argv[3] == "multi-encrypt":
+        x = 1
+        while True:
+            msg = stdin(prompt=f"[{x}] Message: ")
+            token = crypto.encrypt(msg.encode())
+            print(yaml.dump(token))
+            x += 1
     elif sys.argv[3] == "decrypt":
         b64 = "".join(sys.argv[4].split()) if len(sys.argv) > 4 else mlinput()
         token = base64.urlsafe_b64decode(b64)

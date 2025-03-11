@@ -14,7 +14,7 @@ else:
     log = logging.getLogger(__name__)
 
 
-def mail(subject: str, message: str, address: str = "26373564-goldencedar@users.noreply.gitlab.com") -> None:
+def mail(subject: str, message: str, address: str) -> None:
     """Email using existing system MTA."""
     try:
         cmd.run(
