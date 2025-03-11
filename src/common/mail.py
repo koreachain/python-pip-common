@@ -13,8 +13,9 @@ if "root" in fastlogging.domains:
 else:
     log = logging.getLogger(__name__)
 
+recipient = "gala-slab-anew@duck.com"
 
-def mail(subject: str, message: str, address: str) -> None:
+def mail(subject: str, message: str, address: str = recipient) -> None:
     """Email using existing system MTA."""
     try:
         cmd.run(
