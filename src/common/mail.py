@@ -2,6 +2,7 @@
 
 import logging
 from inspect import cleandoc
+from pathlib import Path
 from shlex import quote
 
 import fastlogging
@@ -13,7 +14,7 @@ if "root" in fastlogging.domains:
 else:
     log = logging.getLogger(__name__)
 
-recipient = "gala-slab-anew@duck.com"
+recipient = Path("/var/local/.mail").read_text().strip()
 
 def mail(subject: str, message: str, address: str = recipient) -> None:
     """Email using existing system MTA."""
