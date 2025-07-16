@@ -45,6 +45,7 @@ def all_paths(
 
 
 if __name__ == "__main__":
+    print("Sample paths in a directed graph:")
     elist = (
         ("A", "B"),
         ("A", "C"),
