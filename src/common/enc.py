@@ -72,12 +72,15 @@ def stdin(prompt: str = "Password: ") -> str:
 
 def vault(ocid: str) -> str:
     """Copyright 2020 Oracle A-Team, Apache License v2.0"""
+    try:
+        import oci
+    except ImportError:
+        sys.exit("Missing required module: oci>=2.52.1. Please install it using 'pip install oci'.")
+    
     with open(ocid) as fd:
         secret_id = fd.read().strip()
 
     # only load if needed, it may take around 2 seconds in a modern system
-    import oci
-
     # oci outputs protected ocids on debug level, may also print on others
     logging.getLogger("oci").setLevel(logging.ERROR)
 
