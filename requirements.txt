@@ -9,7 +9,6 @@ fasteners>=0.17.3
 fastlogging>=1.0.0
 getch>=1.0
 numpy>=1.18
-oci>=2.52.1
 orjson>=3.7.5
 python-box>=7.0
 pudb>=2020.1
