@@ -1,0 +1,7 @@
+// https://code.visualstudio.com/docs/editor/extension-gallery#_recommended-extensions
+{
+  "recommendations": [
+    "ms-python.vscode-pylance",
+  ],
+  "unwantedRecommendations": []
+}
