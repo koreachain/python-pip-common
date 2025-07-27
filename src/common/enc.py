@@ -1,10 +1,27 @@
 #!/usr/bin/env python3
+"""
+Usage:
+  enc.py new-salt
+  enc.py (-s <salt> | -c <conf>) (encrypt | multi-encrypt)
+  enc.py (-s <salt> | -c <conf>) decrypt [<message>]
+
+Options:
+  -h, --help
+  -s, --salt <salt:str>
+  -c, --conf <conf:str>
+
+Commands:
+  new-salt                   Generate a new salt.
+  encrypt                    Encrypt a message.
+  multi-encrypt              Encrypt multiple messages.
+  decrypt [<message:str>]    Decrypt a message.
+"""
 
 import base64
 import logging
 import os
 import sys
-from typing import List, Union
+from typing import Union
 
 import yaml
 from cryptography.fernet import Fernet
@@ -12,10 +29,9 @@ from cryptography.hazmat.primitives.hashes import SHA256
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from getch import getch
 
-if sys.version_info >= (3, 9, 0):
-    Message = str | bytes | list[str] | list[bytes]
-else:
-    Message = Union[str, bytes, List[str], List[bytes]]
+from common import arg
+
+Message = Union[str, bytes, list[str], list[bytes]]
 
 
 class Secret:
@@ -45,14 +61,15 @@ class Crypto(Fernet):
         return Secret(super().decrypt(*args, **kwargs).decode())
 
 
-def stdin(prompt: str = "Password: ") -> str:
-    """Better prompt: https://stackoverflow.com/a/64526061"""
-    print(prompt, end="", flush=True)
+def prompt_for_secret(prompt: str = "Secret: ") -> str:
+    """Securely prompt the user for a secret."""
+
+    print(prompt, end="", flush=True, file=sys.stderr)
     buf = b""
     while True:
         ch = getch().encode()
         if ch in {b"\n", b"\r", b"\r\n"}:
-            print("")
+            print("", file=sys.stderr)
             break
         elif ch == b"\x03":  # Ctrl+C
             return ""  # or raise KeyboardInterrupt
@@ -62,21 +79,23 @@ def stdin(prompt: str = "Password: ") -> str:
                 f'\r{(len(prompt)+len(buf)+1)*" "}\r{prompt}{"*" * len(buf)}',
                 end="",
                 flush=True,
+                file=sys.stderr,
             )
         else:
             buf += ch
-            print("*", end="", flush=True)
+            print("*", end="", flush=True, file=sys.stderr)
 
     return buf.decode()
 
 
 def vault(ocid: str) -> str:
     """Copyright 2020 Oracle A-Team, Apache License v2.0"""
+
     try:
         import oci
     except ImportError:
-        sys.exit("Missing required module: oci>=2.52.1. Please install it using 'pip install oci'.")
-    
+        sys.exit("Missing required module: oci>=2.52.1.")
+
     with open(ocid) as fd:
         secret_id = fd.read().strip()
 
@@ -101,49 +120,57 @@ def vault(ocid: str) -> str:
     return read_secret_value(secret_client, secret_id)
 
 
-if __name__ == "__main__":
+def _mlinput() -> str:
+    print("Token (empty line to confirm):", file=sys.stderr)
+    msg = []
+    for line in iter(input, ""):
+        msg.append(line.strip())
+    return "".join(msg)
 
-    def mlinput() -> str:
-        print("Token (empty line to confirm):")
-        msg = []
-        for line in iter(input, ""):
-            msg.append(line.strip())
-        return "".join(msg)
 
-    if len(sys.argv) < 2 or sys.argv[1].lstrip("-") in ("h", "help"):
-        print(str(__doc__).lstrip())
-        sys.exit(0)
-
-    if sys.argv[1] == "new-salt":
+def main():
+    if args.new_salt:
         salt = os.urandom(16)
         print(yaml.dump(salt))
         sys.exit(0)
 
-    if sys.argv[1] == "-s":
-        salt = base64.urlsafe_b64decode(sys.argv[2])
-    elif sys.argv[1] == "-c":
-        with open(sys.argv[2]) as fd:
+    if args.salt:
+        salt = base64.urlsafe_b64decode(args.salt)
+    elif args.conf:
+        with open(args.conf) as fd:
             data = yaml.safe_load(fd)
         salt = data["salt"]
     else:
-        sys.exit("Missing required option: -s salt|-c conf")
+        sys.exit("Missing required option: -s|--salt or -c|--conf")
 
-    password = stdin()
+    if sys.stdin.isatty():
+        password = prompt_for_secret(prompt="Password: ")
+    else:
+        if not args.decrypt or not args.message:
+            sys.exit("Error: stdin must be a TTY unless decrypting a given message.")
+        password = sys.stdin.read().strip()
     crypto = Crypto(salt, password)
     del salt, password
 
-    if sys.argv[3] == "encrypt":
-        msg = sys.argv[4] if len(sys.argv) > 4 else stdin(prompt="Message: ")
-        token = crypto.encrypt(msg.encode())
+    if args.encrypt:
+        message = prompt_for_secret(prompt="Message: ")
+        token = crypto.encrypt(message.encode())
         print(yaml.dump(token))
-    if sys.argv[3] == "multi-encrypt":
+    elif args.multi_encrypt:
+        print("Prompt for multiple messages. Press Ctrl+C to stop.", file=sys.stderr)
         x = 1
         while True:
-            msg = stdin(prompt=f"[{x}] Message: ")
-            token = crypto.encrypt(msg.encode())
+            message = prompt_for_secret(prompt=f"[{x}] Message: ")
+            token = crypto.encrypt(message.encode())
             print(yaml.dump(token))
             x += 1
-    elif sys.argv[3] == "decrypt":
-        b64 = "".join(sys.argv[4].split()) if len(sys.argv) > 4 else mlinput()
+    elif args.decrypt:
+        b64 = "".join(args.message.split()) if args.message else _mlinput()
         token = base64.urlsafe_b64decode(b64)
         print(crypto.decrypt(token).reveal())
+
+
+if __name__ == "__main__":
+    args = arg.parse(__doc__)
+
+    main()
