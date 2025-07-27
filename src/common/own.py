@@ -19,7 +19,7 @@ else:
 # as the special chassis types "vm" and "container" for virtualized systems that lack an
 # immediate physical chassis.
 chassis: str
-__out = cmd.run(["hostnamectl"], env=os.environ | {"LC_ALL": "C"}).stdout.splitlines()
+__out = cmd.run(["hostnamectl"], env={**os.environ, "LC_ALL": "C"}).stdout.splitlines()
 for line in __out:
     if "Chassis" in line:
         chassis = line.split()[1]

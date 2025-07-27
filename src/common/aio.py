@@ -10,10 +10,10 @@ import threading
 import time
 import warnings
 from asyncio import CancelledError
-from asyncio import TimeoutError as AsyncioTimeout  # built-in on Python >=3.11
+from asyncio import TimeoutError as AsyncioTimeout
 from asyncio.tasks import Task
 from contextlib import suppress
-from typing import Awaitable, Callable
+from typing import Awaitable, Callable, Optional
 
 import fastlogging
 import uvloop
@@ -96,7 +96,9 @@ else:
     log.warning("Import aio from the main thread: writing stacks on SIGUSR2 disabled")
 
 
-def init(coro: Awaitable, debug: bool | None = None) -> None:  # debug has its own uses
+def init(
+    coro: Awaitable, debug: Optional[bool] = None
+) -> None:  # debug has its own uses
     """Wrap call to asyncio.run(), use uvloop."""
     loop = uvloop.new_event_loop()
 

@@ -3,14 +3,10 @@
 from __future__ import annotations
 
 import subprocess
-import sys
 from subprocess import CompletedProcess
-from typing import List, Union
+from typing import Union
 
-if sys.version_info >= (3, 9, 0):
-    Args = str | list[str]
-else:
-    Args = Union[str, List[str]]
+Args = Union[str, list[str]]
 
 
 def run(argv: Args, *args, check=True, **kwargs) -> CompletedProcess[str]:
@@ -22,7 +18,7 @@ def run(argv: Args, *args, check=True, **kwargs) -> CompletedProcess[str]:
         check=check,
         capture_output=True,
         text=True,
-        **kwargs
+        **kwargs,
     )
     result.stdout = result.stdout.rstrip("\n")
     result.stderr = result.stderr.rstrip("\n")
@@ -37,7 +33,7 @@ def tty(argv: Args, *args, check=True, **kwargs) -> CompletedProcess[str]:
         *args,
         shell=True if isinstance(argv, str) else False,
         check=check,
-        **kwargs
+        **kwargs,
     )
 
     return result
