@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 
 import logging
-import sys
 import warnings
-from typing import Tuple, Union
+from typing import Union
 
 import fastlogging
 import requests
@@ -13,12 +12,10 @@ from tenacity import RetryCallState, retry
 from tenacity.retry import retry_if_exception_type as retry_exc
 from tenacity.stop import stop_after_attempt as attempts
 from tenacity.stop import stop_after_delay as total_sec
+from tenacity.stop import stop_any
 from tenacity.wait import wait_exponential as exponential
 
-if sys.version_info >= (3, 10, 0):
-    HTTPErrors = int | tuple[int, ...]
-else:
-    HTTPErrors = Union[int, Tuple[()], Tuple[int]]
+HTTPErrors = Union[int, tuple[int, ...]]
 
 if "root" in fastlogging.domains:
     log = fastlogging.domains["root"]
@@ -54,7 +51,7 @@ class Session(requests.Session):
     @retry(
         retry=retry_exc((NetworkError, RetryableHTTPError)),
         wait=exponential(multiplier=3, max=45),
-        stop=attempts(1 + 5) | total_sec(120),
+        stop=stop_any(attempts(1 + 5), total_sec(120)),
         before_sleep=_log_retries.__func__,
     )
     @retry(

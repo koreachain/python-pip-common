@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from math import isclose
-from typing import Type
+from typing import Optional, Type
 
 import numpy as np
 
@@ -20,10 +20,10 @@ def exp_range(
     start: float,
     stop: float,
     count: int,
-    ntype: Type[float] | None = None,
-    round: int | None = None,
-    unique: bool = False
-) -> tuple[float, ...]:
+    ntype: Optional[Type[float]] = None,
+    round: Optional[int] = None,
+    unique: bool = False,
+) -> tuple:
     """Return exponential range of ints or floats."""
     if not ntype:
         ntype = int if isinstance(start, int) and isinstance(stop, int) else float

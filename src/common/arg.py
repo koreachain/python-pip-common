@@ -1,16 +1,12 @@
 #!/usr/bin/env python3
 
 import builtins
-import sys
 from typing import Optional
 
 from box import Box
 from docopt import docopt
 
-if sys.version_info >= (3, 9, 0):
-    Doc = str | None
-else:
-    Doc = Optional[str]
+Doc = Optional[str]
 
 
 def path(name: str) -> str:
@@ -24,11 +20,13 @@ def path(name: str) -> str:
         return name
 
 
-def parse(doc: Doc | None = None, names: dict | None = None) -> Box:
+def parse(doc: Optional[Doc] = None, names: Optional[dict] = None) -> Box:
     """Parse options as described in given __doc__."""
-    assert doc or names
     if not doc:
-        doc = names["__doc__"]
+        if names is not None:
+            doc = names["__doc__"]
+        else:
+            raise ValueError("No docstring or names provided to parse()")
 
     assert isinstance(doc, str)
     parser = docopt(doc)
