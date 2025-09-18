@@ -1,0 +1,28 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    install|upgrade)
+        echo "Checking Python dependencies…"
+
+        if apt-cache show python3-getch >/dev/null 2>&1; then
+            echo "Error: system package python3-getch exists. Please leave it for auto-detection."
+            exit 1
+        fi
+        if apt-cache show python3-fastlogging >/dev/null 2>&1; then
+            echo "Error: system package python3-fastlogging exists. Please leave it for auto-detection."
+            exit 1
+        fi
+
+        if ! python3 -c "import getch" 2>/dev/null; then
+            echo "Installing getch via pip..."
+            python3 -m pip install --break-system-packages getch
+        fi
+        if ! python3 -c "import fastlogging" 2>/dev/null; then
+            echo "Installing fastlogging via pip..."
+            python3 -m pip install --break-system-packages fastlogging
+        fi
+        ;;
+esac
+
+exit 0
