@@ -1,0 +1,7 @@
+#!/usr/bin/make -f
+
+export PYBUILD_NAME=common-local
+export PYBUILD_DISABLE=test  # no test suite
+
+%:
+	dh $@ --buildsystem=pybuild

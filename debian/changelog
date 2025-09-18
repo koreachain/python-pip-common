@@ -1,0 +1,7 @@
+common-local (0.1-1) unstable; urgency=medium
+
+  * Initial release of python3-common-local.
+    - Packages the 'common.local' Python distribution from src/common/.
+    - Built with debhelper/pybuild (PEP 517).
+
+ -- Silver Aloe <91305009+silveraloe@users.noreply.github.com>  Thu, 18 Sep 2025 12:00:00 -0300
