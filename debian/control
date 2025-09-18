@@ -1,0 +1,17 @@
+Source: common-local
+Section: python
+Priority: optional
+Maintainer: Silver Aloe <91305009+silveraloe@users.noreply.github.com>
+Build-Depends: debhelper-compat (= 13), dh-sequence-python3, python3-all, pybuild-plugin-pyproject
+Standards-Version: 4.6.2
+Homepage: https://gitlab.com/koreachain/python-pip-common
+Rules-Requires-Root: no
+
+Package: python3-common-local
+Architecture: all
+Depends: ${misc:Depends}, ${python3:Depends}
+Description: Common utilities for all Python applications
+ Common utilities for all Python applications packaged for Python 3.
+ This package contains the 'common.local' Python distribution
+ (installed under site-packages) with modules from src/common/.
+ Upstream: https://gitlab.com/koreachain/python-pip-common
