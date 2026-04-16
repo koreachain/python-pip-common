@@ -1,28 +1,41 @@
 #!/bin/sh
 set -e
 
+# DANGER: avoid adding more packages. Upon adding `oci', pip tried removing Debian's urllib3!
+#
+# Good options are creating a system-wide venv and adding it to PYTHONPATH (to use with xonsh):
+# sudo uv venv /opt/global_py_lib --system-site-packages
+# sudo /opt/global_py_lib/bin/uv pip install <package_name>
+# export PYTHONPATH="${PYTHONPATH}:/opt/global_py_lib/lib/python3.13/site-packages"
+#
+# And for single scripts, adding python-pip-common, and running them in isolated environments:
+#!/usr/bin/env -S uv run
+# /// script
+# requires-python = ">=3.13"
+# dependencies = [...]
+
 case "$1" in
     install|upgrade)
-        echo "Checking Python dependencies…"
+        echo "Checking Python dependencies…" >&2
 
         if apt-cache show python3-getch >/dev/null 2>&1; then
-            echo "Error: system package python3-getch exists. Please leave it for auto-detection."
+            echo "Error: system package python3-getch exists. Please leave it for auto-detection." >&2
             exit 1
         fi
         if apt-cache show python3-fastlogging >/dev/null 2>&1; then
-            echo "Error: system package python3-fastlogging exists. Please leave it for auto-detection."
+            echo "Error: system package python3-fastlogging exists. Please leave it for auto-detection." >&2
             exit 1
         fi
 
         if ! python3 -c "import getch" 2>/dev/null; then
-            echo "Installing getch via pip..."
-            python3 -m pip install --break-system-packages getch
+            echo "Installing getch via pip..." >&2
+            python3 -m pip install --break-system-packages --root-user-action ignore getch
         fi
         if ! python3 -c "import fastlogging" 2>/dev/null; then
-            echo "Installing fastlogging via pip..."
-            python3 -m pip install --break-system-packages fastlogging
+            echo "Installing fastlogging via pip..." >&2
+            python3 -m pip install --break-system-packages --root-user-action ignore fastlogging
         fi
-        ;;
+    ;;
 esac
 
 exit 0
