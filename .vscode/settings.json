@@ -1,27 +1,7 @@
 // https://code.visualstudio.com/docs/getstarted/settings
 {
   "files.watcherExclude": {
-    "**/.direnv/**": true,
+    "**/.venv/**": true,
     "**/__pycache__/**": true,
-  },
-  "python.terminal.activateEnvironment": false,
-  "python.languageServer": "Pylance",
-  "python.analysis.typeCheckingMode": "basic",
-  "python.formatting.provider": "black",
-  "python.formatting.blackArgs": [
-    "--fast",
-    "--line-length=88",
-  ],
-  "python.sortImports.args": [
-    "--profile=black",
-  ],
-  "[python]": {
-    "editor.formatOnSave": true,
-    "editor.codeActionsOnSave": {
-      "source.organizeImports": "explicit"
-    },
-    "editor.rulers": [
-      88,
-    ],
   },
 }

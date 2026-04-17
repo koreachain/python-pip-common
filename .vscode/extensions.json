@@ -1,7 +1,9 @@
 // https://code.visualstudio.com/docs/editor/extension-gallery#_recommended-extensions
 {
   "recommendations": [
+    "charliermarsh.ruff",
     "ms-python.vscode-pylance",
+    "redhat.vscode-yaml",
   ],
   "unwantedRecommendations": []
 }
