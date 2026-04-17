@@ -6,10 +6,10 @@ import sys
 import yaml
 from box import Box
 
-from common import aio, enc
+from common import enc
 
 
-async def cfg(filename="./config.yml"):
+def cfg(filename="./config.yml"):
     with open(filename) as fd:
         conf: dict = yaml.safe_load(fd)
 
@@ -25,9 +25,9 @@ async def cfg(filename="./config.yml"):
     return Box(conf, frozen_box=True), Box(secrets or {}, frozen_box=True)
 
 
-async def main():
-    print(await cfg(sys.argv[1]))
+def main():
+    print(cfg(sys.argv[1]))
 
 
 if __name__ == "__main__":
-    aio.init(main())
+    main()
