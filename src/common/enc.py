@@ -206,7 +206,7 @@ def main():
             print(yaml.dump(token))
             x += 1
     elif args.decrypt:
-        b64 = "".join(args.message.split()) if args.message else _mlinput()
+        b64 = "".join((args.message or _mlinput()).replace("!!binary |", "").strip())
         token = base64.urlsafe_b64decode(b64)
         print(crypto.decrypt(token).reveal())
 
