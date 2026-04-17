@@ -131,9 +131,20 @@ def vault(ocid: str) -> str:
 
 
 def check_entropy(password: str):
-    results = zxcvbn(password)
-    if results["score"] < 3:
-        return False, f"Too weak! Suggestion: {results['feedback']['suggestions'][0]}"
+    if not password:
+        return False, "Password cannot be empty."
+
+    try:
+        results = zxcvbn(password)
+    except Exception:
+        return False, "Password strength check failed."
+
+    score = results.get("score", 0)
+    suggestions = results.get("feedback", {}).get("suggestions") or []
+    reason = suggestions[0] if suggestions else "Use a longer, less predictable password."
+
+    if score < 4:
+        return False, f"Too weak! Suggestion: {reason}"
     return True, "Strong password."
 
 
