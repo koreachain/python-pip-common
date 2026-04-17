@@ -2,6 +2,7 @@
 
 import os
 import sys
+from typing import Union
 
 import yaml
 from box import Box
@@ -9,13 +10,13 @@ from box import Box
 from common import enc
 
 
-def cfg(filename="./config.yml"):
+def cfg(filename="./config.yml", token: Union[str, None] = None):
     with open(filename) as fd:
         conf: dict = yaml.safe_load(fd)
 
     secrets = None
     if (salt := conf.get("salt")) and (raw_secrets := conf.get("secrets")):
-        token = os.environ.get("CFG_TOKEN") or enc.prompt_for_secret()
+        token = token or os.environ.get("TOKEN") or enc.prompt_for_secret()
         crypto = enc.Crypto(salt, token)
         secrets = {
             k: (crypto.decrypt(v) if isinstance(v, bytes) else v) for k, v in raw_secrets.items()
