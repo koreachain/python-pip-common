@@ -176,7 +176,7 @@ def main():
         ok = None
         while not ok:
             password = prompt_for_secret(prompt="Password: ")
-            if args.encrypt:
+            if args.encrypt or args.multi_encrypt:
                 ok, reason = check_entropy(password)
                 print(reason)
                 if ok:
