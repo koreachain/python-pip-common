@@ -96,9 +96,7 @@ else:
     log.warning("Import aio from the main thread: writing stacks on SIGUSR2 disabled")
 
 
-def init(
-    coro: Awaitable, debug: Optional[bool] = None
-) -> None:  # debug has its own uses
+def init(coro: Awaitable, debug: Optional[bool] = None) -> None:  # debug has its own uses
     """Wrap call to asyncio.run(), use uvloop."""
     loop = uvloop.new_event_loop()
 
@@ -138,7 +136,7 @@ def wrap(coro, warning=True):
 
     # exceptions from child coroutines are not propagated to parent task when wrapped
     if warning:
-        log.warning(f"@aio.wrap is deprecated: start background tasks with aio.task()")
+        log.warning("@aio.wrap is deprecated: start background tasks with aio.task()")
 
     @functools.wraps(coro)
     async def run_func(*args, **kwargs):

@@ -52,12 +52,12 @@ class Session(requests.Session):
         retry=retry_exc((NetworkError, RetryableHTTPError)),
         wait=exponential(multiplier=3, max=45),
         stop=stop_any(attempts(1 + 5), total_sec(120)),
-        before_sleep=_log_retries.__func__,
+        before_sleep=_log_retries.__func__,  # type: ignore
     )
     @retry(
         retry=retry_exc(Timeout),
         stop=attempts(3),
-        before_sleep=_log_retries.__func__,
+        before_sleep=_log_retries.__func__,  # type: ignore
     )
     def request(self, method, url, *args, timeout=30, **kwargs):
         """Set timeout and retries for all HTTP methods."""
