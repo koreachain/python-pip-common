@@ -2,6 +2,9 @@
 python = "3.9"
 
 
+# Notice: this project is also installed by uv, its modules can be imported from the venv.
+
+
 # --- Method 1: Works if uv.lock is missing, installed binaries immediately available
 
 # Creates an empty .venv and activates it

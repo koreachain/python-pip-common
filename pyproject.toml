@@ -28,6 +28,8 @@ dependencies = [
     "requests>=2.26.0",
     "tenacity>=8.0.1",
     "uvloop>=0.15.2",
+    "zxcvbn>=4.5.0",
+    "argon2-cffi>=25.1.0",
 ]
 
 [project.optional-dependencies]

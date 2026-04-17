@@ -21,13 +21,14 @@ import base64
 import logging
 import os
 import sys
+import time
 from typing import Union
 
 import yaml
+from argon2 import low_level
 from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives.hashes import SHA256
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from getch import getch
+from zxcvbn import zxcvbn
 
 from common import arg
 
@@ -52,11 +53,20 @@ class Crypto(Fernet):
     """Allow the use of passwords with Fernet."""
 
     def __init__(self, salt: bytes, password: str) -> None:
-        kdf = PBKDF2HMAC(algorithm=SHA256(), length=32, salt=salt, iterations=3200000)
-        key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
+        # Defaults based on OWASP recommendations
+        raw_key = low_level.hash_secret_raw(
+            secret=password.encode(),
+            salt=salt,
+            time_cost=3,
+            memory_cost=65536,
+            parallelism=4,
+            hash_len=32,
+            type=low_level.Type.ID,
+        )
+        key = base64.urlsafe_b64encode(raw_key)
         super().__init__(key)
 
-    def decrypt(self, *args, **kwargs) -> Secret:
+    def decrypt(self, *args, **kwargs) -> Secret:  # pyright: ignore[reportIncompatibleMethodOverride]
         """Decrypt message and wrap as Secret()."""
         return Secret(super().decrypt(*args, **kwargs).decode())
 
@@ -76,7 +86,7 @@ def prompt_for_secret(prompt: str = "Secret: ") -> str:
         elif ch in {b"\x08", b"\x7f"}:  # Backspace
             buf = buf[:-1]
             print(
-                f'\r{(len(prompt)+len(buf)+1)*" "}\r{prompt}{"*" * len(buf)}',
+                f"\r{(len(prompt) + len(buf) + 1) * ' '}\r{prompt}{'*' * len(buf)}",
                 end="",
                 flush=True,
                 file=sys.stderr,
@@ -92,7 +102,7 @@ def vault(ocid: str) -> str:
     """Copyright 2020 Oracle A-Team, Apache License v2.0"""
 
     try:
-        import oci
+        import oci  # pyright: ignore[reportMissingImports]
     except ImportError:
         sys.exit("Missing required module: oci>=2.52.1.")
 
@@ -120,6 +130,13 @@ def vault(ocid: str) -> str:
     return read_secret_value(secret_client, secret_id)
 
 
+def check_entropy(password: str):
+    results = zxcvbn(password)
+    if results["score"] < 3:
+        return False, f"Too weak! Suggestion: {results['feedback']['suggestions'][0]}"
+    return True, "Strong password."
+
+
 def _mlinput() -> str:
     print("Token (empty line to confirm):", file=sys.stderr)
     msg = []
@@ -144,7 +161,20 @@ def main():
         sys.exit("Missing required option: -s|--salt or -c|--conf")
 
     if sys.stdin.isatty():
-        password = prompt_for_secret(prompt="Password: ")
+        password = None
+        ok = None
+        while not ok:
+            password = prompt_for_secret(prompt="Password: ")
+            if args.encrypt:
+                ok, reason = check_entropy(password)
+                print(reason)
+                if ok:
+                    break
+                else:
+                    time.sleep(0.25)
+            else:
+                ok = True
+        assert password is not None
     else:
         if not args.decrypt or not args.message:
             sys.exit("Error: stdin must be a TTY unless decrypting a given message.")
