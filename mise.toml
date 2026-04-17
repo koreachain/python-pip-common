@@ -1,2 +1,27 @@
 [tools]
 python = "3.9"
+
+
+# --- Method 1: Works if uv.lock is missing, installed binaries immediately available
+
+# Creates an empty .venv and activates it
+[env]
+_.python.venv = { path = ".venv", create = true, python_create_args = ["--without-pip"] }
+
+[hooks]
+enter = """
+grep -q ipykernel ./pyproject.toml || echo '[WARN] mise.toml assumes "ipykernel" dependency'
+test -e uv.lock -a -e .venv/bin/ipython || uv sync
+"""
+
+# --- Method 2: Requires uv.lock, installed binaries available after reloading the shell
+
+# [settings]
+# python.uv_venv_auto = "create|source"
+#
+# Enable `uv sync` during `mise prepare`
+# [prepare.uv]
+# auto = true
+#
+# [hooks]
+# enter = "mise prepare -q"

@@ -1,7 +1,55 @@
-[build-system]
-requires = [
-    "setuptools>=42",
-    "wheel",
-    "Cython"
+[project]
+name = "common-local"
+version = "0.1.0"
+description = "Common utilities for all Python applications"
+authors = [
+    { name = "Silver Aloe", email = "91305009+silveraloe@users.noreply.github.com" }
 ]
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "GPL-3.0-only" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: POSIX :: Linux"
+]
+
+dependencies = [
+    "cryptography>=3.4.7",
+    "docopt-ng>=0.7.2",
+    "fasteners>=0.17.3",
+    "fastlogging>=1.0.0",
+    "getch>=1.0",
+    "numpy>=1.18",
+    "orjson>=3.7.5",
+    "python-box>=7.0",
+    "pudb>=2020.1",
+    "PyYAML>=5.4.1",
+    "requests>=2.26.0",
+    "tenacity>=8.0.1",
+    "uvloop>=0.15.2",
+]
+
+[project.optional-dependencies]
+recommends = [
+    "oci>=2.52.1",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel",  # used in Jupyter and mise.toml
+]
+
+[project.urls]
+Homepage = "https://gitlab.com/koreachain/python-pip-common"
+"Bug Tracker" = "https://gitlab.com/koreachain/python-pip-common/issues"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[build-system]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
