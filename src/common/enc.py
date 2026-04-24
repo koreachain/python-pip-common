@@ -26,7 +26,9 @@ from typing import Union
 
 import yaml
 from argon2 import low_level
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
+from cryptography.hazmat.primitives.hashes import SHA256
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from getch import getch
 from zxcvbn import zxcvbn
 
@@ -49,11 +51,11 @@ class Secret:
         return self.msg
 
 
-class Crypto(Fernet):
+class Crypto:
     """Allow the use of passwords with Fernet."""
 
     def __init__(self, salt: bytes, password: str) -> None:
-        # Defaults based on OWASP recommendations
+        # Current OWASP recommendation: Argon2id
         raw_key = low_level.hash_secret_raw(
             secret=password.encode(),
             salt=salt,
@@ -63,12 +65,29 @@ class Crypto(Fernet):
             hash_len=32,
             type=low_level.Type.ID,
         )
-        key = base64.urlsafe_b64encode(raw_key)
-        super().__init__(key)
+        current_key = base64.urlsafe_b64encode(raw_key)
+        self.current = Fernet(current_key)
 
-    def decrypt(self, *args, **kwargs) -> Secret:  # pyright: ignore[reportIncompatibleMethodOverride]
+        # Backwards compatible with older secrets
+        kdf = PBKDF2HMAC(
+            algorithm=SHA256(),
+            length=32,
+            salt=salt,
+            iterations=3200000,
+        )
+        older_key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
+        self.older = Fernet(older_key)
+
+    def encrypt(self, *args, **kwargs) -> bytes:
+        """Encrypt message using the current key."""
+        return self.current.encrypt(*args, **kwargs)
+
+    def decrypt(self, *args, **kwargs) -> Secret:
         """Decrypt message and wrap as Secret()."""
-        return Secret(super().decrypt(*args, **kwargs).decode())
+        try:
+            return Secret(self.current.decrypt(*args, **kwargs).decode())
+        except InvalidToken:
+            return Secret(self.older.decrypt(*args, **kwargs).decode())
 
 
 def prompt_for_secret(prompt: str = "Secret: ") -> str:
